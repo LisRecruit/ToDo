@@ -12,68 +12,47 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 
 
-@Controller
-@RequestMapping("/note")
+@RestController
+@RequestMapping("/api/note")
 public class NoteController {
     public static final String REDIRECT_TO_LIST = "redirect:/note/list";
 
 
-    private NoteService noteService;
+    private final NoteService noteService;
+
+    @Autowired
     public NoteController(NoteService noteService) {
         this.noteService = noteService;
     }
+
     @GetMapping("/list")
-    public String listNotes(Model model) {
-        int page = 0;
-        int size = 10;
+    public List<NoteResponse> listNotes(@RequestParam(defaultValue = "0") int page,
+                                        @RequestParam(defaultValue = "10") int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
-        model.addAttribute("notes", noteService.listAll(pageRequest));
-        return "note_list";
+        return noteService.listAll(pageRequest).getContent();
     }
 
-    @PostMapping("/delete")
-    public String deleteNote(@RequestParam("id") Long id) {
+    @DeleteMapping("/delete/{id}")
+    public void deleteNote(@PathVariable("id") Long id) {
         noteService.deleteById(id);
-        return REDIRECT_TO_LIST;
     }
 
-    @GetMapping("/edit")
-    public String editNoteForm(@RequestParam("id") Long id, Model model) {
-        NoteResponse note = noteService.getById(id);
-        model.addAttribute("note", note);
-        return "note_edit";
+    @GetMapping("/{id}")
+    public NoteResponse getNoteById(@PathVariable("id") Long id) {
+        return noteService.getById(id);
     }
 
-    @PostMapping("/edit")
-    public String editNote(@RequestParam("id") Long id, @ModelAttribute NoteCreateRequest request) {
+    @PostMapping("/add")
+    public NoteResponse addNote(@Valid @RequestBody NoteCreateRequest request) {
+        return noteService.add(request);
+    }
+
+    @PutMapping("/edit/{id}")
+    public void editNote(@PathVariable("id") Long id, @RequestBody NoteCreateRequest request) {
         noteService.update(id, request);
-        return REDIRECT_TO_LIST;
+
     }
-
-
-    @GetMapping("/add")
-    public String showAddNoteForm(Model model){
-        model.addAttribute("note", new Note());
-        return "add_note";
-    }
-
-@PostMapping("/add")
-public String addNote(@Valid @ModelAttribute("note") NoteCreateRequest request,
-                      BindingResult bindingResult,
-                      Model model) {
-    if ((request.getTitle() == null || request.getTitle().isBlank()) &&
-            (request.getContent() == null || request.getContent().isBlank())) {
-        bindingResult.reject("contentOrTitle", "Please provide at least Title or Content.");
-    }
-
-    if (bindingResult.hasErrors()) {
-        return "add_note";
-    }
-
-    noteService.add(request);
-    return REDIRECT_TO_LIST;
-}
-
 }

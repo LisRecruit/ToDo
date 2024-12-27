@@ -27,15 +27,16 @@ public class NoteService {
     }
 
     @Transactional
-    public Note add(NoteCreateRequest request) {
+    public NoteResponse add(NoteCreateRequest request) {
 
         if ((request.getTitle() == null || request.getTitle().isBlank()) &&
                 (request.getContent() == null || request.getContent().isBlank())) {
             throw new IllegalArgumentException("Either title or content must be provided.");
         }
        Note note = noteMapper.toNote(request);
-       noteRepository.save(note);
-        return noteMapper.toNote(request);
+        note=noteRepository.save(note);
+//       noteRepository.save(note);
+        return noteMapper.toNoteResponse(note);
     }
 
     @Transactional
